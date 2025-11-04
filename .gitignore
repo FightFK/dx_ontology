@@ -1,0 +1,84 @@
+# ========================
+# Node.js & Express Project
+# ========================
+
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+
+# Temporary & upload data
+uploads/
+tmp/
+temp/
+__pycache__/
+
+# Build / dist
+dist/
+build/
+coverage/
+
+# Test data
+test/data/
+test/output/
+*.pdf
+*.xlsx
+*.csv
+
+# Docker artifacts
+docker-data/
+docker-compose.override.yml
+
+# GraphDB files
+graphdb-data/
+graphdb-import/
+graphdb/logs/
+
+# LLM cache or models (if any local storage)
+llm_cache/
+models/
+*.bin
+*.pt
+*.onnx
+
+# Backup or generated files
+*.bak
+*.old
+*.orig
+*.tmp
+
+# OS metadata
+ehthumbs.db
+Icon?
+
+# ========================
+# Custom Project Specific
+# ========================
+
+# Feature extractor outputs
+feature_output/
+ontology_exports/
+rdf_temp/
+
