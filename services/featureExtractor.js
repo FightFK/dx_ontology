@@ -2,23 +2,24 @@ import fs from "fs";
 import pdfParse from "pdf-parse";  
 import * as XLSX from "xlsx";
 import axios from "axios";
+import { getSchemaLoader } from "./ontologyLoader.js";
 
 const LLM_URL = process.env.LLM_URL || "https://llm-uat.105app.site/v1/chat/completions";
 
 /**
- * Simple rule-based extraction (fallback when LLM is unavailable)
+ * Simple rule-based extraction (fallback when LLM is unavailable) // ไม่น่าได้ใช้นะ ;-;
  */
 function extractWithRules(text) {
   const entities = [];
   const relations = [];
   
-  // หาคำสำคัญพื้นฐาน
+
   const lines = text.split('\n').filter(l => l.trim().length > 0);
   
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
     
-    // ตัวอย่างง่ายๆ: หา project name, KPI, target
+    // Simple rules to identify projects and KPIs
     if (trimmed.toLowerCase().includes('project') || trimmed.toLowerCase().includes('โครงการ')) {
       entities.push({
         id: `project_${idx}`,
@@ -90,7 +91,24 @@ export async function extractFeaturesFromFile(filePath, fileType) {
   }
 
   try {
-    // 🔹 เรียก LLM (gpt-oss20b บน vLLM)
+    // 🔹 Load Ontology Schema
+    const schema = await getSchemaLoader();
+    const schemaContext = schema.getSchemaContext();
+    
+    // Build schema description for LLM
+    const schemaDescription = `
+Available Classes:
+${schemaContext.classes.map(c => `- ${c.name}: ${c.comment || c.label}`).join('\n')}
+
+Available Properties:
+${schemaContext.objectProperties.map(p => `- ${p.name} (${p.domain} -> ${p.range})`).join('\n')}
+${schemaContext.datatypeProperties.map(p => `- ${p.name}: ${p.label}`).join('\n')}
+
+Predefined Individuals:
+${schemaContext.individuals.map(i => `- ${i.name} (${i.type}): ${i.label}`).join('\n')}
+`;
+
+    // 🔹 เรียก LLM (gpt-oss20b บน vLLM) พร้อม Schema Context
     console.log(`🤖 Calling LLM at ${LLM_URL}...`);
     const res = await axios.post(
       LLM_URL,
@@ -99,17 +117,28 @@ export async function extractFeaturesFromFile(filePath, fileType) {
         messages: [
           {
             role: "system",
-            content: "You are a data extraction expert. You MUST respond ONLY with valid JSON. Do not include any explanations or text outside the JSON structure."
+            content: `You are a data extraction expert for Digital Transformation (DX) projects. Extract entities and relationships that match the provided ontology schema. You MUST respond ONLY with valid JSON.
+
+${schemaDescription}
+
+IMPORTANT:
+1. Only use class types from the schema above
+2. Only use properties from the schema above
+3. For dimensions, use predefined individuals: Cultural, Strategic, Technological, Operational
+4. For phases, use: Planning, Implementation, Evaluation
+5. Generate unique IDs in format: {type}_{number} (e.g., project_1, kpi_1)`
           },
           {
             role: "user",
-            content: `Extract entities and relationships from the following text and return ONLY valid JSON in this exact format:
+            content: `Extract DX project entities and relationships from this text and return ONLY valid JSON in this exact format:
 {
   "entities": [
-    {"id": "unique_id", "type": "EntityType", "label": "Entity Name", "lang": "en"}
+    {"id": "project_1", "type": "DXProject", "label": "Project Name", "lang": "th"},
+    {"id": "budget_1", "type": "Budget", "label": "1000000", "lang": "th"}
   ],
   "relations": [
-    {"subject": "entity_id_1", "predicate": "relationType", "object": "entity_id_2"}
+    {"subject": "project_1", "predicate": "hasBudget", "object": "budget_1"},
+    {"subject": "project_1", "predicate": "hasDimension", "object": "Cultural"}
   ]
 }
 
@@ -143,6 +172,36 @@ ${text.substring(0, 4000)}`
     
     const parsed = JSON.parse(jsonStr);
     console.log(`✅ Parsed ${parsed.entities?.length || 0} entities, ${parsed.relations?.length || 0} relations`);
+    
+    // 🔹 Validate against schema
+    const validationErrors = [];
+    
+    if (parsed.entities) {
+      parsed.entities.forEach((entity, idx) => {
+        const validation = schema.validateEntity(entity);
+        if (!validation.valid) {
+          console.warn(`⚠️  Entity ${idx} validation failed:`, validation.errors);
+          validationErrors.push(...validation.errors);
+        }
+      });
+    }
+    
+    if (parsed.relations) {
+      parsed.relations.forEach((relation, idx) => {
+        const validation = schema.validateRelation(relation);
+        if (!validation.valid) {
+          console.warn(`⚠️  Relation ${idx} validation failed:`, validation.errors);
+          validationErrors.push(...validation.errors);
+        }
+      });
+    }
+    
+    if (validationErrors.length > 0) {
+      console.warn(`⚠️  Found ${validationErrors.length} validation warnings`);
+    } else {
+      console.log('✅ All entities and relations validated successfully');
+    }
+    
     return parsed;
     
   } catch (e) {
