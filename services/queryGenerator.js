@@ -2,7 +2,8 @@ import axios from 'axios';
 import { getSchemaLoader } from './ontologyLoader.js';
 import { runSelect } from './graphdbClient.js';
 
-const LLM_URL = process.env.LLM_URL || "https://llm-uat.105app.site/v1/chat/completions";
+const LLM_URL = process.env.LLM_URL || "https://openrouter.ai/api/v1/chat/completions";
+const LLM_MODEL = process.env.LLM_MODEL || "google/gemini-2.0-flash-exp:free";
 
 /**
  * Convert natural language question to SPARQL query using LLM
@@ -36,7 +37,7 @@ Namespace: <http://www.dxproject.com/ontology#>
     const res = await axios.post(
       LLM_URL,
       {
-        model: "gpt-oss20b",
+        model: LLM_MODEL,
         messages: [
           {
             role: "system",
@@ -68,8 +69,10 @@ Return ONLY the SPARQL query.`
         headers: {
           Authorization: `Bearer ${process.env.API_KEY}`,
           "Content-Type": "application/json",
+          "HTTP-Referer": process.env.YOUR_SITE_URL || "http://localhost:3000",
+          "X-Title": process.env.YOUR_APP_NAME || "DX_Ontology_System"
         },
-        timeout: 30000
+        timeout: 60000
       }
     );
 
@@ -144,7 +147,7 @@ async function formatResults(question, sparql, results) {
     const res = await axios.post(
       LLM_URL,
       {
-        model: "gpt-oss20b",
+        model: LLM_MODEL,
         messages: [
           {
             role: "system",
@@ -170,8 +173,10 @@ Please provide a natural language answer to the question based on these results.
         headers: {
           Authorization: `Bearer ${process.env.API_KEY}`,
           "Content-Type": "application/json",
+          "HTTP-Referer": process.env.YOUR_SITE_URL || "http://localhost:3000",
+          "X-Title": process.env.YOUR_APP_NAME || "DX_Ontology_System"
         },
-        timeout: 30000
+        timeout: 60000
       }
     );
 

@@ -206,7 +206,7 @@ let schemaLoader = null;
 
 export async function getSchemaLoader() {
   if (!schemaLoader) {
-    schemaLoader = new OntologySchemaLoader('ontology/dx_ontology.ttl');
+    schemaLoader = new OntologySchemaLoader('ontology/dxProject.owl');
     await schemaLoader.load();
     console.log('✅ Ontology schema loaded successfully');
     console.log(`   Classes: ${schemaLoader.classes.size}`);
