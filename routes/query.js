@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { generateSPARQL, answerQuestion } from '../services/queryGenerator.js';
+import { generateSPARQL, answerQuestion, answerQuestionSmart } from '../services/queryGenerator.js';
 
 const router = Router();
 
@@ -67,6 +67,39 @@ router.post('/sparql', async (req, res) => {
     
   } catch (e) {
     console.error('❌ SPARQL generation error:', e);
+    res.status(500).json({ 
+      ok: false,
+      error: e.message 
+    });
+  }
+});
+
+/**
+ * POST /api/query/smart
+ * Smart question answering - retrieves all data then uses LLM to analyze
+ * Better for complex questions requiring reasoning
+ * 
+ * Body: { question: "Which AI technologies are related to customer service?" }
+ */
+router.post('/smart', async (req, res) => {
+  try {
+    const { question } = req.body;
+    
+    if (!question) {
+      return res.status(400).json({ error: 'question is required' });
+    }
+    
+    console.log(`\n🧠 Smart Question: ${question}`);
+    
+    const result = await answerQuestionSmart(question);
+    
+    res.json({
+      ok: true,
+      ...result
+    });
+    
+  } catch (e) {
+    console.error('❌ Smart query error:', e);
     res.status(500).json({ 
       ok: false,
       error: e.message 
