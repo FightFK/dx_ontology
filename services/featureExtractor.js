@@ -1,6 +1,6 @@
 import fs from "fs";
 import pdfParse from "pdf-parse";  
-import * as XLSX from "xlsx";
+import XLSX from "xlsx";
 import mammoth from "mammoth";
 import axios from "axios";
 import { getSchemaLoader } from "./ontologyLoader.js";
@@ -77,7 +77,7 @@ export async function extractFeaturesFromFile(filePath, fileType) {
         }
       }
       
-    } else if (fileType === ".xls" || fileType === ".xlsx") {
+    } else if (fileType === ".xls" || fileType === ".xlsx" || fileType === ".csv") {
       try {
         const workbook = XLSX.readFile(filePath);
         console.log(`📊 Excel sheets: ${workbook.SheetNames.join(', ')}`);

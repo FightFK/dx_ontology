@@ -8,17 +8,9 @@ curl -X POST http://localhost:3000/api/ingest/file \
   -F "file=@project_document.pdf"
 ```
 
-### 2. Upload RDF/Turtle โดยตรง
-```json
-POST /api/rdf/string
-Content-Type: application/json
 
-{
-  "turtle": "@prefix : <https://Dxonto.105app.site/Dx#> .\n\n:SmartFarmProject rdf:type :DXProject ;\n    :projectName \"Smart Farm Yala\" ;\n    :hasDimension :Technological ;\n    :hasKPI :KPI_Yield_Increase ."
-}
-```
 
-### 3. ตัวอย่าง JSON ที่ LLM จะ extract
+### ตัวอย่าง JSON ที่ LLM จะ extract ออกมาเพื่อใส่ใน ontologyDB
 ```json
 {
   "entities": [
