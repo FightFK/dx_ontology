@@ -81,4 +81,7 @@ Icon?
 feature_output/
 ontology_exports/
 rdf_temp/
+scripts/
+reset-graphdb.bat
+
 
