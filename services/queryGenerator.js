@@ -215,12 +215,13 @@ LIMIT 500`;
 PREFIX : <http://localhost:3000/ontology/dx#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT DISTINCT ?project ?projectName ?tech ?techName ?org ?orgName 
+SELECT DISTINCT ?project ?projectName ?projectDescription ?tech ?techName ?org ?orgName 
        ?result ?resultLabel ?dimension ?dimensionLabel ?phase ?phaseLabel ?kpi ?kpiLabel
        ?budgetAmount ?budgetSource
 WHERE {
   ?project a :DXProject .
   ?project rdfs:label ?projectName .
+  OPTIONAL { ?project :projectDescription ?projectDescription }
   
   OPTIONAL { 
     ?project :hasTechProduct ?tech .
@@ -283,6 +284,7 @@ LIMIT 1000`;
         if (!projectMap[projName]) {
           projectMap[projName] = {
             name: projName,
+            projectDescription: b.projectDescription?.value || null,
             technologies: new Set(),
             organizations: new Set(),
             results: new Set(),
@@ -307,6 +309,7 @@ LIMIT 1000`;
       // Convert Sets to Arrays
       structuredData = Object.values(projectMap).map(p => ({
         name: p.name,
+        projectDescription: p.projectDescription,
         budgetAmount: p.budgetAmount,
         budgetSource: p.budgetSource,
         technologies: Array.from(p.technologies),
