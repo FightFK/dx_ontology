@@ -1,51 +1,76 @@
 import fs from "fs";
-import pdfParse from "pdf-parse";  
+import pdfParse from "pdf-parse";
 import XLSX from "xlsx";
 import mammoth from "mammoth";
 import axios from "axios";
 import { getSchemaLoader } from "./ontologyLoader.js";
 
-const LLM_URL = process.env.LLM_URL || "https://openrouter.ai/api/v1/chat/completions";
+const LLM_URL =
+  process.env.LLM_URL || "https://openrouter.ai/api/v1/chat/completions";
 const LLM_MODEL = process.env.LLM_MODEL || "google/gemini-2.0-flash-exp:free";
 
 // 🔹 Ontology Class Descriptions
 const CLASS_DESCRIPTIONS = {
-  "DigitalProvider": "Organizations, companies, or service providers that deliver digital solutions, platforms, or technologies (software, hardware, cloud services, consultation)",
-  
-  "DXDimension": "Various dimensions that must be considered when implementing a DX project. Each dimension reflects a critical factor for success.",
-  "Cultural": "(DXDimension subclass) Values and behaviors that support technology acceptance and adoption",
-  "Environmental": "(DXDimension subclass) External factors like policies, trends, and resources that influence digital adoption",
-  "Financial": "(DXDimension subclass) Budgeting, cost management, and measuring ROI in digital transformation",
-  "Informational": "(DXDimension subclass) Managing data to support decision-making with accuracy, security, and accessibility",
-  "Innovation": "(DXDimension subclass) New technologies and digital solutions like AI and automation to improve performance",
-  "Participative": "(DXDimension subclass) Collaboration, user feedback, and stakeholder involvement in digital change",
-  "Quality": "(DXDimension subclass) Improving efficiency, user experience, and compliance through digital tools",
-  "Security": "(DXDimension subclass) IT, data, and human security to protect digital assets from threats",
-  "Structural": "(DXDimension subclass) How an organization adapts its structure, processes, and workforce to support digital change",
-  
-  "DXPhase": "Key phases of Digital Transformation project - progression from digitization to digitalization to transformation",
-  "Digitization": "(DXPhase subclass) Converting analog/physical data into digital form (e.g., scanning documents, electronic files). Changes data format but not business processes",
-  "Digitalization": "(DXPhase subclass) Applying digital technologies to improve existing business processes through automation and system integration (e.g., cloud accounting, CRM, supply chain automation)",
-  "DigitalTransformation": "(DXPhase subclass) Most advanced phase where digital technologies fundamentally reshape organizational models, operations, and customer interactions (e.g., AI-driven decisions, digital service delivery, blockchain)",
-  
-  "DXProject": "Core entity representing a Digital Transformation project, linking together components, processes, and stakeholders",
-  "PostProject": "Completed DX project with evaluation, knowledge capturing, sustainability planning, and long-term impact assessment",
-  "PreProject": "Pre-implementation phase of DX project capturing planning and preparation activities",
-  
-  "DxResourceType": "Types of resources used in DX project: PDF, Word, Excel, images, videos, etc.",
-  
-  "KPI": "Key Performance Indicators to measure and evaluate project success or progress based on predefined targets",
-  
-  "ProjectDetail": "Operational and contextual information: organization, budget, location",
-  "Budget": "(ProjectDetail subclass) Financial allocation for the DX project",
-  "Location": "(ProjectDetail subclass) Geographic or administrative area where project is implemented",
-  "Organization": "(ProjectDetail subclass) Entity responsible for initiating, managing, or supporting the project (government, company, institution)",
-  
-  "ResultProject": "Outcomes and achieved results of a DX project",
-  
-  "TechCategory": "Category or domain of technologies: agriculture, tourism, healthcare, etc.",
-  
-  "TechProduct": "Specific digital tools, platforms, or systems: software applications, data platforms, cloud services"
+  DigitalProvider:
+    "Organizations, companies, or service providers that deliver digital solutions, platforms, or technologies (software, hardware, cloud services, consultation)",
+
+  DXDimension:
+    "Various dimensions that must be considered when implementing a DX project. Each dimension reflects a critical factor for success.",
+  Cultural:
+    "(DXDimension subclass) Values and behaviors that support technology acceptance and adoption",
+  Environmental:
+    "(DXDimension subclass) External factors like policies, trends, and resources that influence digital adoption",
+  Financial:
+    "(DXDimension subclass) Budgeting, cost management, and measuring ROI in digital transformation",
+  Informational:
+    "(DXDimension subclass) Managing data to support decision-making with accuracy, security, and accessibility",
+  Innovation:
+    "(DXDimension subclass) New technologies and digital solutions like AI and automation to improve performance",
+  Participative:
+    "(DXDimension subclass) Collaboration, user feedback, and stakeholder involvement in digital change",
+  Quality:
+    "(DXDimension subclass) Improving efficiency, user experience, and compliance through digital tools",
+  Security:
+    "(DXDimension subclass) IT, data, and human security to protect digital assets from threats",
+  Structural:
+    "(DXDimension subclass) How an organization adapts its structure, processes, and workforce to support digital change",
+
+  DXPhase:
+    "Key phases of Digital Transformation project - progression from digitization to digitalization to transformation",
+  Digitization:
+    "(DXPhase subclass) Converting analog/physical data into digital form (e.g., scanning documents, electronic files). Changes data format but not business processes",
+  Digitalization:
+    "(DXPhase subclass) Applying digital technologies to improve existing business processes through automation and system integration (e.g., cloud accounting, CRM, supply chain automation)",
+  DigitalTransformation:
+    "(DXPhase subclass) Most advanced phase where digital technologies fundamentally reshape organizational models, operations, and customer interactions (e.g., AI-driven decisions, digital service delivery, blockchain)",
+
+  DXProject:
+    "Core entity representing a Digital Transformation project, linking together components, processes, and stakeholders",
+  PostProject:
+    "Completed DX project with evaluation, knowledge capturing, sustainability planning, and long-term impact assessment",
+  PreProject:
+    "Pre-implementation phase of DX project capturing planning and preparation activities",
+
+  DxResourceType:
+    "Types of resources used in DX project: PDF, Word, Excel, images, videos, etc.",
+
+  KPI: "Key Performance Indicators to measure and evaluate project success or progress based on predefined targets",
+
+  ProjectDetail:
+    "Operational and contextual information: organization, budget, location",
+  Budget: "(ProjectDetail subclass) Financial allocation for the DX project",
+  Location:
+    "(ProjectDetail subclass) Geographic or administrative area where project is implemented",
+  Organization:
+    "(ProjectDetail subclass) Entity responsible for initiating, managing, or supporting the project (government, company, institution)",
+
+  ResultProject: "Outcomes and achieved results of a DX project",
+
+  TechCategory:
+    "Category or domain of technologies: agriculture, tourism, healthcare, etc.",
+
+  TechProduct:
+    "Specific digital tools, platforms, or systems: software applications, data platforms, cloud services",
 };
 
 export async function extractFeaturesFromFile(filePath, fileType) {
@@ -58,57 +83,108 @@ export async function extractFeaturesFromFile(filePath, fileType) {
     if (fileType === ".pdf") {
       const dataBuffer = fs.readFileSync(filePath);
       console.log(`📦 PDF buffer size: ${dataBuffer.length} bytes`);
-      
+
       try {
-        const pdf = await pdfParse(dataBuffer); 
+        const pdf = await pdfParse(dataBuffer);
         text = pdf.text || "";
-        
+
         console.log(`📄 PDF info: ${pdf.numpages} pages`);
         console.log(`📝 First 500 chars: ${text.substring(0, 500)}`);
       } catch (pdfError) {
         console.error(`❌ PDF parsing error: ${pdfError.message}`);
-        
-        if (pdfError.message.includes("XRef") || pdfError.message.includes("bad XRef entry")) {
-          throw new Error("ไฟล์ PDF นี้มีปัญหา (corrupted หรือ encrypted). กรุณาลอง:\n1. เปิดไฟล์ด้วย PDF reader แล้ว Export/Save As ใหม่\n2. ใช้ online PDF repair tool\n3. แปลงเป็น image แล้วใช้ OCR");
-        } else if (pdfError.message.includes("encrypted") || pdfError.message.includes("password")) {
-          throw new Error("ไฟล์ PDF นี้ถูกป้องกันด้วยรหัสผ่าน กรุณาปลดล็อคก่อนอัพโหลด");
+
+        if (
+          pdfError.message.includes("XRef") ||
+          pdfError.message.includes("bad XRef entry")
+        ) {
+          throw new Error(
+            "ไฟล์ PDF นี้มีปัญหา (corrupted หรือ encrypted). กรุณาลอง:\n1. เปิดไฟล์ด้วย PDF reader แล้ว Export/Save As ใหม่\n2. ใช้ online PDF repair tool\n3. แปลงเป็น image แล้วใช้ OCR"
+          );
+        } else if (
+          pdfError.message.includes("encrypted") ||
+          pdfError.message.includes("password")
+        ) {
+          throw new Error(
+            "ไฟล์ PDF นี้ถูกป้องกันด้วยรหัสผ่าน กรุณาปลดล็อคก่อนอัพโหลด"
+          );
         } else {
           throw new Error(`ไม่สามารถอ่านไฟล์ PDF ได้: ${pdfError.message}`);
         }
       }
-      
-    } else if (fileType === ".xls" || fileType === ".xlsx" || fileType === ".csv") {
+    } else if (
+      fileType === ".xls" ||
+      fileType === ".xlsx" ||
+      fileType === ".csv"
+    ) {
       try {
         const workbook = XLSX.readFile(filePath);
-        console.log(`📊 Excel sheets: ${workbook.SheetNames.join(', ')}`);
-        
+        console.log(`📊 Excel sheets: ${workbook.SheetNames.join(", ")}`);
+
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        console.log(`📊 Found ${jsonData.length} rows`);
+
+        // 🔹 Format as structured text for better LLM understanding
+        if (jsonData.length > 0) {
+          const headers = Object.keys(jsonData[0]);
+          console.log(`📋 Headers: ${headers.join(", ")}`);
+
+          // Create readable text with clear structure
+          text = `=== Excel/CSV Data ===\n\n`;
+          text += `Headers: ${headers.join(" | ")}\n\n`;
+          text += `--- Data Rows ---\n\n`;
+
+          jsonData.forEach((row, idx) => {
+            text += `Row ${idx + 1}:\n`;
+            headers.forEach((header) => {
+              const value = row[header];
+              if (value !== null && value !== undefined && value !== "") {
+                text += `  ${header}: ${value}\n`;
+              }
+            });
+            text += `\n`;
+          });
+        } else {
+          // Fallback to CSV format if no data
+          text = XLSX.utils.sheet_to_csv(sheet);
+        }
+
+        console.log(`📝 First 400 chars:\n${text.substring(0, 400)}`);
+      } catch (xlsxError) {
+        console.error(`❌ Excel parsing error: ${xlsxError.message}`);
+        throw new Error(`ไม่สามารถอ่านไฟล์ Excel ได้: ${xlsxError.message}`);
+      }
+
+      try {
+        const workbook = XLSX.readFile(filePath);
+        console.log(`📊 Excel sheets: ${workbook.SheetNames.join(", ")}`);
+
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         text = XLSX.utils.sheet_to_csv(sheet);
-        
+
         console.log(`📝 First 200 chars: ${text.substring(0, 200)}`);
       } catch (xlsxError) {
         console.error(`❌ Excel parsing error: ${xlsxError.message}`);
         throw new Error(`ไม่สามารถอ่านไฟล์ Excel ได้: ${xlsxError.message}`);
       }
-      
     } else if (fileType === ".docx") {
       try {
         const dataBuffer = fs.readFileSync(filePath);
         console.log(`📦 DOCX buffer size: ${dataBuffer.length} bytes`);
-        
+
         const result = await mammoth.extractRawText({ buffer: dataBuffer });
         text = result.value || "";
-        
+
         if (result.messages && result.messages.length > 0) {
           console.log(`⚠️ DOCX warnings: ${result.messages.length}`);
         }
-        
+
         console.log(`📝 First 200 chars: ${text.substring(0, 200)}`);
       } catch (docxError) {
         console.error(`❌ DOCX parsing error: ${docxError.message}`);
         throw new Error(`ไม่สามารถอ่านไฟล์ DOCX ได้: ${docxError.message}`);
       }
-      
     } else {
       throw new Error(`Unsupported file type: ${fileType}`);
     }
@@ -120,7 +196,9 @@ export async function extractFeaturesFromFile(filePath, fileType) {
   console.log(`📄 Extracted text length: ${text.length} characters`);
 
   if (text.trim().length < 10) {
-    console.warn(`⚠️  WARNING: Extracted text is too short (${text.length} chars)`);
+    console.warn(
+      `⚠️  WARNING: Extracted text is too short (${text.length} chars)`
+    );
     console.warn(`⚠️  Text content: "${text}"`);
   }
 
@@ -128,23 +206,32 @@ export async function extractFeaturesFromFile(filePath, fileType) {
     // 🔹 Load Ontology Schema
     const schema = await getSchemaLoader();
     const schemaContext = schema.getSchemaContext();
-    
+
     // Generate timestamp for unique IDs across multiple ingestions
     const timestamp = Date.now();
     console.log(`🔖 Using timestamp for IDs: ${timestamp}`);
-    
+
     // Build detailed class descriptions
-    const classDescriptions = schemaContext.classes.map(c => {
-      const desc = CLASS_DESCRIPTIONS[c.name] || c.comment || c.label || 'DX class';
-      return `• ${c.name}: ${desc}`;
-    }).join('\n');
-    
+    const classDescriptions = schemaContext.classes
+      .map((c) => {
+        const desc =
+          CLASS_DESCRIPTIONS[c.name] || c.comment || c.label || "DX class";
+        return `• ${c.name}: ${desc}`;
+      })
+      .join("\n");
+
     // Create lists for validation
-    const allowedClasses = schemaContext.classes.map(c => c.name).join(', ');
-    const allowedObjectProps = schemaContext.objectProperties.map(p => p.name).join(', ');
-    const allowedDatatypeProps = schemaContext.datatypeProperties.map(p => p.name).join(', ');
-    const allowedIndividuals = schemaContext.individuals.map(i => i.name).join(', ');
-    
+    const allowedClasses = schemaContext.classes.map((c) => c.name).join(", ");
+    const allowedObjectProps = schemaContext.objectProperties
+      .map((p) => p.name)
+      .join(", ");
+    const allowedDatatypeProps = schemaContext.datatypeProperties
+      .map((p) => p.name)
+      .join(", ");
+    const allowedIndividuals = schemaContext.individuals
+      .map((i) => i.name)
+      .join(", ");
+
     // 🔹 Call LLM with comprehensive schema context
     console.log(`🤖 Calling LLM (${LLM_MODEL}) at ${LLM_URL}...`);
     const res = await axios.post(
@@ -293,7 +380,7 @@ Extract:
     {"subject": "dxproject_1734123456_1", "predicate": "hasProjectResult", "object": "resultproject_1734123456_2"},
     {"subject": "dxproject_1734123456_1", "predicate": "hasDimension", "object": "cultural_1734123456_1"}
   ]
-}`
+}`,
           },
           {
             role: "user",
@@ -313,46 +400,58 @@ ID format: {type}_${timestamp}_{number}
 Example: dxproject_${timestamp}_1, organization_${timestamp}_1
 
 Text to analyze:
-${text.substring(0, 5000)}`
-          }
+${text.substring(0, 5000)}`,
+          },
         ],
         temperature: 0.1,
         max_tokens: 4000,
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.API_KEY}`,
           "Content-Type": "application/json",
           "HTTP-Referer": process.env.YOUR_SITE_URL || "http://localhost:3000",
-          "X-Title": process.env.YOUR_APP_NAME || "DX_Ontology_System"
+          "X-Title": process.env.YOUR_APP_NAME || "DX_Ontology_System",
         },
-        timeout: 60000
+        timeout: 60000,
       }
     );
 
     // Parse LLM response
-    console.log('📦 Full API Response:', JSON.stringify(res.data, null, 2).substring(0, 800));
-    
+    console.log(
+      "📦 Full API Response:",
+      JSON.stringify(res.data, null, 2).substring(0, 800)
+    );
+
     let content = res.data.choices?.[0]?.message?.content;
     const reasoning = res.data.choices?.[0]?.message?.reasoning;
-    
+
     if (reasoning && (!content || content.trim() === "")) {
-      console.log('⚠️ Model returned reasoning instead of content. This model does not support json_object format.');
-      console.log('💡 Please use one of these models instead:');
-      console.log('   - google/gemini-2.0-flash-exp:free (recommended, fast & free)');
-      console.log('   - openai/gpt-4o-mini (cheap & good)');
-      console.log('   - anthropic/claude-3.5-sonnet (best quality)');
-      throw new Error("Model does not support structured JSON output. Change LLM_MODEL in .env file.");
+      console.log(
+        "⚠️ Model returned reasoning instead of content. This model does not support json_object format."
+      );
+      console.log("💡 Please use one of these models instead:");
+      console.log(
+        "   - google/gemini-2.0-flash-exp:free (recommended, fast & free)"
+      );
+      console.log("   - openai/gpt-4o-mini (cheap & good)");
+      console.log("   - anthropic/claude-3.5-sonnet (best quality)");
+      throw new Error(
+        "Model does not support structured JSON output. Change LLM_MODEL in .env file."
+      );
     }
-    
+
     if (!content || content.trim() === "" || content === "{}") {
       throw new Error("Empty LLM response");
     }
-    
+
     console.log("✅ LLM Raw Response Length:", content.length);
-    console.log("✅ LLM Raw Response:", content.substring(0, 800) + (content.length > 800 ? "..." : ""));
-    
+    console.log(
+      "✅ LLM Raw Response:",
+      content.substring(0, 800) + (content.length > 800 ? "..." : "")
+    );
+
     // Parse JSON (remove markdown if present)
     let jsonStr = content.trim();
     if (jsonStr.startsWith("```json")) {
@@ -360,49 +459,62 @@ ${text.substring(0, 5000)}`
     } else if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```\s*/, "").replace(/```\s*$/, "");
     }
-    
+
     const parsed = JSON.parse(jsonStr);
-    console.log(`✅ Parsed ${parsed.entities?.length || 0} entities, ${parsed.relations?.length || 0} relations`);
-    
+    console.log(
+      `✅ Parsed ${parsed.entities?.length || 0} entities, ${
+        parsed.relations?.length || 0
+      } relations`
+    );
+
     // 🔹 Validate against schema
     const validationErrors = [];
-    
+
     if (parsed.entities) {
       parsed.entities.forEach((entity, idx) => {
         const validation = schema.validateEntity(entity);
         if (!validation.valid) {
-          console.warn(`⚠️  Entity ${idx} (${entity.type}): ${validation.errors.join(', ')}`);
+          console.warn(
+            `⚠️  Entity ${idx} (${entity.type}): ${validation.errors.join(
+              ", "
+            )}`
+          );
           validationErrors.push(...validation.errors);
         }
       });
     }
-    
+
     if (parsed.relations) {
       parsed.relations.forEach((relation, idx) => {
         const validation = schema.validateRelation(relation);
         if (!validation.valid) {
-          console.warn(`⚠️  Relation ${idx} (${relation.predicate}): ${validation.errors.join(', ')}`);
+          console.warn(
+            `⚠️  Relation ${idx} (${
+              relation.predicate
+            }): ${validation.errors.join(", ")}`
+          );
           validationErrors.push(...validation.errors);
         }
       });
     }
-    
+
     if (validationErrors.length > 0) {
       console.warn(`⚠️  Found ${validationErrors.length} validation warnings`);
     } else {
-      console.log('✅ All entities and relations validated successfully');
+      console.log("✅ All entities and relations validated successfully");
     }
-    
+
     return parsed;
-    
   } catch (e) {
     console.error("❌ LLM Error:", e.message);
     if (e.response) {
       console.error("Response status:", e.response.status);
       console.error("Response data:", e.response.data);
     }
-    
+
     console.log("⚠️  Falling back to rule-based extraction");
-    throw new Error("ไม่สามารถสกัดข้อมูลด้วย LLM ได้ กรุณาตรวจสอบไฟล์หรือใช้ไฟล์อื่นแทน");
+    throw new Error(
+      "ไม่สามารถสกัดข้อมูลด้วย LLM ได้ กรุณาตรวจสอบไฟล์หรือใช้ไฟล์อื่นแทน"
+    );
   }
 }
