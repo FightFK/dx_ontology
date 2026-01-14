@@ -317,7 +317,18 @@ ${allowedIndividuals}
       - Extract companies providing tech solutions
       - Link: dxproject_1 → hasDigitalProvider → digitalprovider_X
 
-2. **Property Usage**: 
+2. **URL Links & Resources** (IMPORTANT):
+   - Detect and preserve URLs from text:
+     * Google Drive links (https://drive.google.com/...)
+     * Website URLs (https://...)
+     * Image references (รูปภาพ:, ภาพ:, Image:, Photo:)
+   - Store in projectDescription property with clear markers
+   - Format: "Project description text | Images: [URL1], [URL2]"
+   - Examples:
+     * "Smart Tourism project | Images: https://drive.google.com/file/d/abc123/view"
+     * "Digital healthcare system | Website: https://hospital.go.th | Photos: https://drive.google.com/..."
+
+3. **Property Usage**: 
    - Use EXACT property names from allowed lists
    - Common relations:
      * hasProjectDetail (→ Budget, Location, Organization)
@@ -328,17 +339,19 @@ ${allowedIndividuals}
      * hasTechProduct (→ TechProduct)
      * hasTechCategory (→ TechCategory)
      * hasDigitalProvider (→ DigitalProvider)
+   - Datatype properties for text with URLs:
+     * projectDescription: Can contain text + URLs (e.g., "Description | Images: URL")
 
-3. **ID Generation**: 
+4. **ID Generation**: 
    - Format: {lowercase_type}_{timestamp}_{sequential_number}
    - The timestamp will be provided in the user message
    - Examples: organization_1734123456_1, techproduct_1734123456_1, resultproject_1734123456_1
 
-4. **Language Tag**:
+5. **Language Tag**:
    - "lang": "th" for Thai content
    - "lang": "en" for English content
 
-5. **Completeness Checklist** (Extract ALL of these if mentioned):
+6. **Completeness Checklist** (Extract ALL of these if mentioned):
    ✅ Projects (DXProject/PreProject/PostProject)
    ✅ Organizations (ALL stakeholders, municipalities, agencies)
    ✅ Technologies (TechProduct for actual systems, TechCategory for domains)
@@ -351,14 +364,17 @@ ${allowedIndividuals}
    ✅ Digital Providers (vendors)
 
 COMPREHENSIVE EXAMPLE:
-Text: "Kho Hong Municipality partnered with depa Southern Branch to deploy Cloud CRM system (budget 1M baht) in Satun province. The digitalization project improved citizen satisfaction by 18% and reduced response time by 30%. Main challenge was user resistance to new technology."
+Text: "Kho Hong Municipality partnered with depa Southern Branch to deploy Cloud CRM system (budget 1M baht) in Satun province. The digitalization project improved citizen satisfaction by 18% and reduced response time by 30%. Main challenge was user resistance to new technology. รูปภาพโครงการ: https://drive.google.com/file/d/abc123xyz/view?usp=sharing"
 
 Timestamp: 1734123456
 
 Extract:
 {
   "entities": [
-    {"id": "dxproject_1734123456_1", "type": "DXProject", "label": "Kho Hong Cloud CRM", "lang": "en", "properties": {"projectName": "Kho Hong Cloud CRM"}},
+    {"id": "dxproject_1734123456_1", "type": "DXProject", "label": "Kho Hong Cloud CRM", "lang": "en", "properties": {
+      "projectName": "Kho Hong Cloud CRM",
+      "projectDescription": "Cloud CRM deployment for citizen services | Images: https://drive.google.com/file/d/abc123xyz/view?usp=sharing"
+    }},
     {"id": "organization_1734123456_1", "type": "Organization", "label": "Kho Hong Municipality", "lang": "en", "properties": {"organizationName": "Kho Hong Municipality"}},
     {"id": "organization_1734123456_2", "type": "Organization", "label": "depa Southern Branch", "lang": "en", "properties": {"organizationName": "depa Southern Branch"}},
     {"id": "techproduct_1734123456_1", "type": "TechProduct", "label": "Cloud CRM", "lang": "en", "properties": {"productName": "Cloud CRM"}},
